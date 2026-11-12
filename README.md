@@ -36,3 +36,6 @@ Branches, ‏Products, ‏Weekly sales (מקושר ל-Branches), ‏Monthly prod
 4. טוקן קריאה בלבד לדשבורד: data.records:read, ‏schema.bases:read. מדביקים ב-`airtable.html`.
 
 `tests/airtable_mock.html` מריץ את הדשבורד החי על נתוני דמה בלי טוקן.
+
+## מקור חיצוני: Hebcal API (בונוס)
+פאנל "חגים מול יום רגיל" ב-`index.html` מושך בזמן אמת את חגי ישראל מ-`hebcal.com` (בקשת GET, בלי מפתח, CORS פתוח), ומשווה את ההכנסה היומית הממוצעת בכל חג להכנסה ביום פתיחה רגיל.

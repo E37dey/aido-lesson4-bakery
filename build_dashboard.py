@@ -68,6 +68,11 @@ for b in BR:
 data["by_branch"] = {b: data[b]["revenue"] for b in BR}
 data["branch_months"] = {b: data[b]["months"] for b in BR}
 data["log"] = log
+daily = collections.Counter()
+for r in rows:
+    if r["status"] == "completed":
+        daily[r["order_datetime"][:10]] += float(r["line_total"])
+data["daily"] = {k: round(v) for k, v in sorted(daily.items())}
 data["range"] = [min(r["order_datetime"] for r in rows)[:10], max(r["order_datetime"] for r in rows)[:10]]
 
 html = open("index.html", encoding="utf-8").read()
