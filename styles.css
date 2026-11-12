@@ -1,0 +1,52 @@
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#182033;--line:#243049;--ink:#e8edf6;--mute:#8b97ad;--acc:#f5a524;--acc2:#2dd4bf;--acc3:#f05252;--acc4:#8b7cff;--acc5:#5aa9ff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 85% -10%,#1b2540 0%,transparent 60%),var(--bg);color:var(--ink);font-family:Heebo,system-ui,sans-serif;font-size:15px}
+.wrap{max-width:1360px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.5px}
+h1 small{display:block;font-size:13px;font-weight:500;color:var(--acc);letter-spacing:2px;margin-bottom:4px}
+.sub{color:var(--mute);font-size:13px;margin-top:4px}
+.mono{font-family:"JetBrains Mono",monospace}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.filters button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;transition:.15s}
+.filters button:hover{border-color:var(--acc)}
+.filters button.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;min-width:0}
+.card h2{margin:0 0 2px;font-size:15px;font-weight:700}
+.card .hint{color:var(--mute);font-size:12px;margin-bottom:10px}
+.kpi{grid-column:span 2}
+.kpi .lab{color:var(--mute);font-size:12px}
+.kpi .val{font-family:"JetBrains Mono",monospace;font-size:24px;font-weight:700;margin-top:6px;direction:ltr;text-align:right}
+.kpi .val.acc{color:var(--acc)}
+.kpi::before{content:"";position:absolute;inset:0 0 auto auto;width:40%;height:2px;background:var(--acc);border-radius:2px;opacity:.7}
+.s8{grid-column:span 8}.s4{grid-column:span 4}.s6{grid-column:span 6}.s12{grid-column:span 12}.s5{grid-column:span 5}.s7{grid-column:span 7}
+.ch{position:relative;height:280px}
+.ch.tall{height:360px}
+.heat{display:grid;grid-template-columns:44px repeat(24,1fr);gap:2px;direction:ltr;font-size:10px}
+.heat div{height:34px;border-radius:3px}
+.heat .lb{color:var(--mute);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-family:Heebo}
+.heat .hr{height:16px;color:var(--mute);text-align:center}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.flow{display:flex;flex-direction:column;gap:8px}
+.flow .row{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.flow .row b{font-family:"JetBrains Mono",monospace}
+.flow .row.ok{border-color:var(--acc2)}
+.flow .row.neg b{color:var(--acc3)}
+.flow .row.ok b{color:var(--acc2)}
+.fixes{display:flex;flex-direction:column;gap:7px}
+.fix{display:grid;grid-template-columns:150px 1fr 56px;gap:10px;align-items:center;font-size:13px}
+.bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc4)}
+.fix .n{font-family:"JetBrains Mono",monospace;text-align:left;color:var(--mute)}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(45,212,191,.15);color:var(--acc2);margin-inline-start:6px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right}
+th{color:var(--mute);font-weight:500}
+td.num{font-family:"JetBrains Mono",monospace;text-align:left}
+footer{color:var(--mute);font-size:12px;margin-top:20px;line-height:1.7}
+@media (max-width:1000px){.kpi{grid-column:span 4}.s8,.s4,.s6,.s5,.s7{grid-column:span 12}.qa{grid-template-columns:1fr}}
+@media (max-width:560px){.heat div{height:18px}.heat .hr{height:12px}.kpi{grid-column:span 6}.kpi .val{font-size:19px}h1{font-size:22px}.fix{grid-template-columns:110px 1fr 44px}.heat{font-size:8px;grid-template-columns:30px repeat(24,1fr)}}
+.navlink{color:var(--acc2);font-size:13px;text-decoration:none}
+.navlink:hover{text-decoration:underline}
+[hidden]{display:none!important}

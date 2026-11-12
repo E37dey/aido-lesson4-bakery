@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מאפייה · חי מ-Airtable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+.connect{max-width:560px;margin:40px auto}
+.connect label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
+.connect input[type=text],.connect input[type=password]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--ink);font:inherit;direction:ltr;text-align:left}
+.connect input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.btn{background:var(--acc);color:#111;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.row-actions{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute)}
+.alert{margin-top:14px;padding:10px 12px;border-radius:10px;font-size:13px}
+.alert.bad{background:rgba(240,82,82,.12);color:#ff9b9b;border:1px solid rgba(240,82,82,.4)}
+.steps{font-size:13px;color:var(--mute);line-height:1.8;margin:0;padding-inline-start:18px}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc3)}
+.chip.on{color:var(--acc2);border-color:rgba(45,212,191,.4)}
+.chip.on::before{background:var(--acc2)}
+.mono{font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1><small>AiDO · מטלה 4 · מחובר למסד נתונים</small>מכירות המאפייה, חי מ-Airtable</h1>
+    <div class="sub" id="sub">כל המספרים בעמוד הזה נקראים עכשיו מה-API של Airtable, לא מקובץ.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <span class="chip" id="chip">לא מחובר</span>
+    <div class="filters"><button id="btn-refresh">רענון</button><button id="btn-disconnect">התנתקות</button></div>
+    <a class="navlink" href="index.html">← הגרסה מהקובץ</a>
+  </div>
+</header>
+
+<section class="card connect" id="connect" hidden>
+  <h2>חיבור ל-Airtable</h2>
+  <div class="hint">הטוקן נשלח רק ל-api.airtable.com. הוא לא נכתב לקוד ולא עולה ל-GitHub.</div>
+  <ol class="steps">
+    <li>airtable.com/create/tokens ← Create token</li>
+    <li>הרשאות: data.records:read ו-schema.bases:read בלבד (קריאה)</li>
+    <li>גישה: רק לבסיס "מאפייה - מכירות"</li>
+  </ol>
+  <label for="in-token">Personal access token</label>
+  <input id="in-token" type="password" placeholder="pat..." autocomplete="off" spellcheck="false">
+  <label for="in-base">Base ID</label>
+  <input id="in-base" type="text" value="appoBEQVNkMFcKm1K" spellcheck="false">
+  <div class="row-actions">
+    <button class="btn" id="btn-connect">התחברות</button>
+    <label class="chk"><input type="checkbox" id="in-remember"> לזכור בדפדפן הזה (localStorage)</label>
+  </div>
+  <div class="alert bad" id="connect-alert" hidden></div>
+</section>
+
+<div class="grid" id="dash" hidden>
+  <div class="card kpi"><div class="lab">הכנסות (הושלמו)</div><div class="val acc" id="k-rev"></div></div>
+  <div class="card kpi"><div class="lab">הזמנות שהושלמו</div><div class="val" id="k-ord"></div></div>
+  <div class="card kpi"><div class="lab">ממוצע להזמנה</div><div class="val" id="k-aov"></div></div>
+  <div class="card kpi"><div class="lab">פריטים שנמכרו</div><div class="val" id="k-items"></div></div>
+  <div class="card kpi"><div class="lab">סכום שהוחזר</div><div class="val" id="k-ref"></div></div>
+  <div class="card kpi"><div class="lab">רשומות ב-Airtable</div><div class="val" id="k-recs"></div></div>
+
+  <div class="card s8"><h2>הכנסות לפי שבוע</h2><div class="hint">טבלת Weekly sales, שורה לכל שבוע וסניף. השבוע מתחיל ביום ראשון.</div><div class="ch"><canvas id="c-weeks"></canvas></div></div>
+  <div class="card s4"><h2>הכנסות לפי סניף</h2><div class="hint">סכום של Weekly sales לפי הקישור ל-Branches</div><div class="ch"><canvas id="c-branch"></canvas></div></div>
+
+  <div class="card s7"><h2>המוצרים המובילים</h2><div class="hint">טבלת Monthly product sales, מקושרת ל-Products</div><div class="ch tall"><canvas id="c-prod"></canvas></div></div>
+  <div class="card s5"><h2>קטגוריות</h2><div class="hint">הקטגוריה נשמרת פעם אחת, בטבלת Products</div><div class="ch tall"><canvas id="c-cat"></canvas></div></div>
+
+  <div class="card s6"><h2>מוצרים עונתיים</h2><div class="hint">יחידות לפי חודש: סופגניות ואוזני המן</div><div class="ch"><canvas id="c-season"></canvas></div></div>
+  <div class="card s6"><h2>יומן ייבוא</h2><div class="hint">טבלת Import runs: כל הרצה של upload_airtable.py כותבת שורה עם ספירה בכניסה וביציאה</div><table id="t-runs"></table></div>
+</div>
+</div>
+
+<script>
+(function(){
+  var API = "https://api.airtable.com/v0", STORE_KEY = "bakery-airtable-connection";
+  var HE_PROD_FALLBACK = {};
+  var BCOL = ["#f5a524","#2dd4bf","#8b7cff","#5aa9ff"], COLORS = ["#f5a524","#2dd4bf","#8b7cff","#5aa9ff","#f05252"];
+  var HE_CAT = {Bread:"לחמים",Sweet:"מתוקים",Savoury:"מלוחים",Drinks:"משקאות"};
+  var HE_MONTH = ["ינו","פבר","מרץ","אפר","מאי","יוני","יולי","אוג","ספט","אוק","נוב","דצמ"];
+  var nf = new Intl.NumberFormat("he-IL"), ils = function(v){ return "₪" + nf.format(Math.round(v)); };
+  var $ = function(id){ return document.getElementById(id); };
+  var conn = null, charts = {};
+
+  Chart.defaults.color = "#8b97ad"; Chart.defaults.font.family = "Heebo, sans-serif"; Chart.defaults.borderColor = "#243049";
+  Chart.defaults.plugins.legend.labels.boxWidth = 10; Chart.defaults.plugins.tooltip.rtl = true;
+
+  function loadConn(){ try { var r = localStorage.getItem(STORE_KEY); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
+  function saveConn(c, remember){ try { if (remember) localStorage.setItem(STORE_KEY, JSON.stringify(c)); else localStorage.removeItem(STORE_KEY); } catch(e){} }
+
+  function api(path){
+    return fetch(API + path, {headers:{Authorization:"Bearer " + conn.token}}).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(body){
+        if (!res.ok){ var e = new Error((body.error && (body.error.message || body.error.type)) || res.statusText); e.status = res.status; throw e; }
+        return body;
+      });
+    });
+  }
+  function fetchAll(table){
+    var out = [];
+    function page(offset){
+      var q = new URLSearchParams({pageSize:"100"}); if (offset) q.set("offset", offset);
+      return api("/" + conn.baseId + "/" + encodeURIComponent(table) + "?" + q).then(function(b){
+        out = out.concat(b.records); return b.offset ? page(b.offset) : out;
+      });
+    }
+    return page();
+  }
+  function explain(err){
+    if (err.status === 401) return "הטוקן לא תקין או שפג תוקפו (401).";
+    if (err.status === 403) return "לטוקן אין הרשאה לבסיס הזה (403). בדוק scopes וגישה לבסיס.";
+    if (err.status === 404) return "הבסיס או הטבלה לא נמצאו (404). בדוק את ה-Base ID.";
+    if (err.status === 429) return "יותר מדי בקשות (429). נסה שוב בעוד כמה שניות.";
+    return "שגיאה: " + err.message;
+  }
+
+  function showConnect(msg){ $("dash").hidden = true; $("connect").hidden = false; setChip(false); var a = $("connect-alert"); a.hidden = !msg; a.textContent = msg || ""; }
+  function setChip(on){ $("chip").className = "chip" + (on ? " on" : ""); $("chip").textContent = on ? "מחובר ל-Airtable" : "לא מחובר"; }
+  function draw(id, cfg){ if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); }
+  function mlab(iso){ var p = iso.split("-"); return HE_MONTH[+p[1]-1] + " " + p[0].slice(2); }
+  function first(v){ return Array.isArray(v) ? v[0] : v; }
+
+  function load(){
+    $("chip").textContent = "טוען...";
+    // sequential, to stay far below the 5 requests/second limit
+    var T = {};
+    var names = ["Branches","Products","Weekly sales","Monthly product sales","Import runs"];
+    return names.reduce(function(p, n){ return p.then(function(){ return fetchAll(n).then(function(r){ T[n] = r; }); }); }, Promise.resolve())
+      .then(function(){ render(T); setChip(true); $("connect").hidden = true; $("dash").hidden = false; });
+  }
+
+  function render(T){
+    var br = {}, pr = {};
+    T["Branches"].forEach(function(r){ br[r.id] = r.fields; });
+    T["Products"].forEach(function(r){ pr[r.id] = r.fields; });
+    var W = T["Weekly sales"], M = T["Monthly product sales"];
+    var sum = function(a, f){ return a.reduce(function(s, r){ return s + (r.fields[f] || 0); }, 0); };
+    var rev = sum(W, "Revenue"), ord = sum(W, "Orders");
+    $("k-rev").textContent = ils(rev); $("k-ord").textContent = nf.format(ord);
+    $("k-aov").textContent = ils(ord ? rev / ord : 0); $("k-items").textContent = nf.format(sum(W, "Items"));
+    $("k-ref").textContent = ils(sum(W, "Refunded"));
+    var nrec = Object.keys(T).reduce(function(s, k){ return s + T[k].length; }, 0);
+    $("k-recs").textContent = nf.format(nrec) + " / 1,000";
+
+    // weekly line per branch
+    var weeks = Array.from(new Set(W.map(function(r){ return r.fields["Week start"]; }))).sort();
+    var bids = Object.keys(br).sort(function(a, b){ return sum(W.filter(function(r){ return first(r.fields.Branch) === b; }), "Revenue") - sum(W.filter(function(r){ return first(r.fields.Branch) === a; }), "Revenue"); });
+    var sets = bids.map(function(id, i){
+      var m = {}; W.forEach(function(r){ if (first(r.fields.Branch) === id) m[r.fields["Week start"]] = r.fields.Revenue || 0; });
+      return {label: br[id]["Hebrew name"] || br[id].Name, data: weeks.map(function(w){ return m[w] || 0; }), borderColor: BCOL[i], backgroundColor: BCOL[i], tension: .3, pointRadius: 0, borderWidth: 2};
+    });
+    draw("c-weeks", {type:"line", data:{labels: weeks.map(function(w){ return w.split("-").reverse().slice(0,2).join("."); }), datasets: sets},
+      options:{maintainAspectRatio:false, interaction:{mode:"index", intersect:false}, plugins:{legend:{position:"bottom", rtl:true}, tooltip:{callbacks:{label:function(c){ return " " + c.dataset.label + ": " + ils(c.raw); }}}}, scales:{x:{ticks:{maxTicksLimit:12}}, y:{ticks:{callback:function(v){ return ils(v); }}}}}});
+
+    draw("c-branch", {type:"bar", data:{labels: sets.map(function(s){ return s.label; }), datasets:[{data: sets.map(function(s){ return s.data.reduce(function(a, b){ return a + b; }, 0); }), backgroundColor: BCOL, borderRadius: 6}]},
+      options:{maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){ return " " + ils(c.raw); }}}}, scales:{y:{ticks:{callback:function(v){ return ils(v); }}}}}});
+
+    // products and categories from the monthly table + the Products table
+    var byP = {}, byC = {}, season = {};
+    M.forEach(function(r){
+      var p = pr[first(r.fields.Product)] || {}, name = p["Hebrew name"] || p.Name || "?";
+      byP[name] = byP[name] || {rev: 0, units: 0}; byP[name].rev += r.fields.Revenue || 0; byP[name].units += r.fields.Units || 0;
+      var c = HE_CAT[p.Category] || p.Category || "?"; byC[c] = (byC[c] || 0) + (r.fields.Revenue || 0);
+      if (p.Name === "Sufganiyah" || p.Name === "Hamantaschen (box)"){ season[p.Name] = season[p.Name] || {}; season[p.Name][r.fields.Month] = r.fields.Units || 0; }
+    });
+    var top = Object.entries(byP).sort(function(a, b){ return b[1].rev - a[1].rev; }).slice(0, 10);
+    draw("c-prod", {type:"bar", data:{labels: top.map(function(t){ return t[0]; }), datasets:[{data: top.map(function(t){ return t[1].rev; }), backgroundColor: top.map(function(_, i){ return i ? "#8b7cff" : "#f5a524"; }), borderRadius: 5}]},
+      options:{indexAxis:"y", maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){ return " " + ils(c.raw) + " · " + nf.format(top[c.dataIndex][1].units) + " יח׳"; }}}}, scales:{x:{ticks:{callback:function(v){ return ils(v); }}}, y:{position:"right"}}}});
+    var cats = Object.entries(byC).sort(function(a, b){ return b[1] - a[1]; });
+    draw("c-cat", {type:"doughnut", data:{labels: cats.map(function(c){ return c[0]; }), datasets:[{data: cats.map(function(c){ return c[1]; }), backgroundColor: COLORS, borderColor: "#121826", borderWidth: 3}]},
+      options:{maintainAspectRatio:false, cutout:"62%", plugins:{legend:{position:"bottom", rtl:true}, tooltip:{callbacks:{label:function(c){ var t = c.dataset.data.reduce(function(a, b){ return a + b; }, 0); return " " + c.label + ": " + ils(c.raw) + " (" + (100 * c.raw / t).toFixed(1) + "%)"; }}}}}});
+    var months = Array.from(new Set(M.map(function(r){ return r.fields.Month; }))).sort();
+    draw("c-season", {type:"bar", data:{labels: months.map(mlab), datasets:[
+      {label:"סופגנייה", data: months.map(function(m){ return (season.Sufganiyah || {})[m] || 0; }), backgroundColor:"#f5a524", borderRadius:4},
+      {label:"אוזני המן", data: months.map(function(m){ return (season["Hamantaschen (box)"] || {})[m] || 0; }), backgroundColor:"#2dd4bf", borderRadius:4}]},
+      options:{maintainAspectRatio:false, plugins:{legend:{position:"bottom", rtl:true}}}});
+
+    var runs = T["Import runs"].map(function(r){ return r.fields; }).sort(function(a, b){ return (b.Run || "").localeCompare(a.Run || ""); }).slice(0, 6);
+    $("t-runs").innerHTML = "<tr><th>הרצה</th><th>נכנסו</th><th>נכתבו</th><th>כפולות</th><th>נדחו</th><th>נסגר?</th></tr>" + runs.map(function(f){
+      return "<tr><td class='num'>" + (f.Run || "") + "</td><td class='num'>" + nf.format(f["Rows in"] || 0) + "</td><td class='num'>" + nf.format(f["Rows written"] || 0) + "</td><td class='num'>" + (f["Duplicates removed"] || 0) + "</td><td class='num'>" + (f.Rejected || 0) + "</td><td>" + (f["Adds up"] ? "כן" : "לא") + "</td></tr>";
+    }).join("");
+    $("sub").textContent = "נקרא עכשיו מ-Airtable: " + nf.format(nrec) + " רשומות ב-5 טבלאות מקושרות · " + weeks.length + " שבועות";
+  }
+
+  function connect(c, remember){
+    conn = c;
+    return load().then(function(){ saveConn(c, remember); }).catch(function(err){ conn = null; showConnect(explain(err)); });
+  }
+  $("btn-connect").onclick = function(){
+    var c = {token: $("in-token").value.trim(), baseId: $("in-base").value.trim()};
+    if (!/^pat/.test(c.token)) return showConnect("טוקן של Airtable מתחיל ב-pat.");
+    if (!/^app[A-Za-z0-9]{14}$/.test(c.baseId)) return showConnect("Base ID מתחיל ב-app ויש בו 17 תווים.");
+    connect(c, $("in-remember").checked);
+  };
+  $("btn-refresh").onclick = function(){ if (conn) load().catch(function(e){ showConnect(explain(e)); }); };
+  $("btn-disconnect").onclick = function(){ conn = null; saveConn(null, false); $("in-token").value = ""; showConnect(""); };
+
+  var saved = loadConn();
+  if (saved){ $("in-token").value = saved.token; $("in-base").value = saved.baseId; $("in-remember").checked = true; connect(saved, true); }
+  else showConnect("");
+})();
+</script>
+</body>
+</html>

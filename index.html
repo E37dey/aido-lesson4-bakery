@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מאפייה · חדר בקרה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1><small>AiDO · מטלה 4 · חדר בקרה</small>מכירות המאפייה</h1>
+    <div class="sub" id="range"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="filters" id="filters"></div><a class="navlink" href="airtable.html">גרסה חיה מ-Airtable ←</a></div>
+</header>
+
+<div class="grid">
+  <div class="card kpi"><div class="lab">הכנסות (הושלמו)</div><div class="val acc" id="k-rev"></div></div>
+  <div class="card kpi"><div class="lab">הזמנות שהושלמו</div><div class="val" id="k-ord"></div></div>
+  <div class="card kpi"><div class="lab">ממוצע להזמנה</div><div class="val" id="k-aov"></div></div>
+  <div class="card kpi"><div class="lab">פריטים שנמכרו</div><div class="val" id="k-items"></div></div>
+  <div class="card kpi"><div class="lab">שיעור החזרים</div><div class="val" id="k-ref"></div></div>
+  <div class="card kpi"><div class="lab">סכום שהוחזר</div><div class="val" id="k-refamt"></div></div>
+
+  <div class="card s8"><h2>הכנסות לפי חודש</h2><div class="hint">הזמנות שהושלמו, ₪. בתצוגת "כל הסניפים" כל סניף בקו משלו.</div><div class="ch"><canvas id="c-months"></canvas></div></div>
+  <div class="card s4"><h2>הכנסות לפי סניף</h2><div class="hint">כל התקופה, ₪</div><div class="ch"><canvas id="c-branch"></canvas></div></div>
+
+  <div class="card s7"><h2>המוצרים המובילים</h2><div class="hint">10 המובילים בהכנסות, ₪</div><div class="ch tall"><canvas id="c-prod"></canvas></div></div>
+  <div class="card s5"><h2>מתי מגיעים לקוחות</h2><div class="hint">מספר הזמנות לפי יום ושעה. כהה = שקט, כתום = עומס.</div><div class="heat" id="heat"></div></div>
+
+  <div class="card s4"><h2>ערוץ הזמנה</h2><div class="hint">לפי מספר הזמנות</div><div class="ch"><canvas id="c-chan"></canvas></div></div>
+  <div class="card s4"><h2>אמצעי תשלום</h2><div class="hint">לפי מספר הזמנות</div><div class="ch"><canvas id="c-pay"></canvas></div></div>
+  <div class="card s4"><h2>קטגוריות</h2><div class="hint">חלק מההכנסות</div><div class="ch"><canvas id="c-cat"></canvas></div></div>
+
+  <div class="card s6"><h2>מוצרים עונתיים</h2><div class="hint">יחידות שנמכרו לפי חודש: סופגניות (חנוכה) ואוזני המן (פורים)</div><div class="ch"><canvas id="c-season"></canvas></div></div>
+  <div class="card s6"><h2>ימי שישי לפי סניף <span class="badge">תואם לשקף 15 בשיעור</span></h2><div class="hint">אותה שאלה כמו שאילתת ה-SQL בשיעור: הושלמו, ימי שישי בלבד, מהגדול לקטן</div><table id="t-fri"></table></div>
+
+  <div class="card s12"><h2>איכות נתונים: ספירה בכניסה, ספירה ביציאה</h2><div class="hint">הקובץ הגולמי עבר ניקוי פעם אחת בכניסה (clean.py). הקובץ הגולמי לא שונה, שורות שלא ניתנו לניקוי נשמרו ב-rejects.csv עם הסיבה.</div>
+    <div class="qa"><div class="flow" id="flow"></div><div class="fixes" id="fixes"></div></div>
+  </div>
+</div>
+<footer>מקור: bakery_sales_raw.csv (נתוני תרגול של הקורס). הדשבורד לקריאה בלבד ולא שומר דבר.<br>תהליך: clean.py מנקה ובודק שהחשבון נסגר, build_dashboard.py מסכם ומטמיע את הנתונים בעמוד.</footer>
+</div>
+
+<script>
+/*DATA*/const DATA = {"all":{"revenue":647065,"orders":14196,"aov":45.6,"items":40194,"refund_rate":1.56,"refunded_amount":9805,"months":{"2025-09":52784,"2025-10":50873,"2025-11":52612,"2025-12":60547,"2026-01":56357,"2026-02":55034,"2026-03":56539,"2026-04":38594,"2026-05":58503,"2026-06":57449,"2026-07":55464,"2026-08":52309},"products":[["Challah",80280,4460],["Sourdough loaf",59724,2133],["Rugelach (box)",56768,1774],["Croissant",47448,3954],["Cappuccino",41636,2974],["Babka",41538,989],["Pita (pack of 6)",37332,3111],["Cheese bourekas",37100,3710],["Cinnamon roll",35308,2522],["Baguette",33586,2399],["Whole wheat loaf",31224,1301],["Cheesecake slice",30492,1386],["Potato bourekas",27252,3028],["Cookies (bag)",25780,1289],["Spinach pastry",21373,1943],["Espresso",18500,1850],["Fresh orange juice",17952,1122],["Hamantaschen (box)",2492,89],["Sufganiyah",1280,160]],"categories":{"Bread":242146,"Sweet":241106,"Savoury":85725,"Drinks":78088},"channels":{"in-store":10201,"online pickup":2272,"delivery":1723},"payments":{"card":7487,"bit":3005,"cash":2035,"apple_pay":1669},"customers":{"returning":10678,"new":3518},"friday":{"Tel Aviv - Florentin":51054,"Tel Aviv - Dizengoff":44119,"Ramat Gan":33719,"Herzliya":29765},"heat":[[0,0,0,0,0,0,76,212,302,276,153,126,184,246,117,96,74,115,171,127,57,0,0,0],[0,0,0,0,0,0,69,201,292,225,155,95,168,229,123,85,85,126,146,123,45,0,0,0],[0,0,0,0,0,0,67,185,249,229,142,107,182,177,98,72,85,103,138,95,57,0,0,0],[0,0,0,0,0,0,54,221,244,203,128,109,182,198,118,63,68,112,141,99,67,0,0,0],[0,0,0,0,0,0,64,202,316,228,165,130,202,216,129,87,98,144,157,124,64,0,0,0],[0,0,0,0,0,0,150,490,573,516,541,435,319,228,126,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"seasonal":{"Sufganiyah":{"2025-12":160},"Hamantaschen (box)":{"2026-02":63,"2026-03":26}}},"Tel Aviv - Florentin":{"revenue":211247,"orders":4614,"aov":45.8,"items":13166,"refund_rate":1.81,"refunded_amount":3305,"months":{"2025-09":17721,"2025-10":16819,"2025-11":17761,"2025-12":18288,"2026-01":18766,"2026-02":17905,"2026-03":17845,"2026-04":13102,"2026-05":19965,"2026-06":18259,"2026-07":16899,"2026-08":17917},"products":[["Challah",25884,1438],["Sourdough loaf",19152,684],["Rugelach (box)",17600,550],["Croissant",15240,1270],["Babka",14784,352],["Cappuccino",13510,965],["Pita (pack of 6)",12576,1048],["Cheese bourekas",12370,1237],["Cinnamon roll",11186,799],["Baguette",11088,792],["Whole wheat loaf",10296,429],["Cheesecake slice",9636,438],["Potato bourekas",9315,1035],["Cookies (bag)",8140,407],["Spinach pastry",7062,642],["Espresso",6400,640],["Fresh orange juice",5616,351],["Hamantaschen (box)",952,34],["Sufganiyah",440,55]],"categories":{"Bread":78996,"Sweet":77978,"Savoury":28747,"Drinks":25526},"channels":{"in-store":3314,"online pickup":726,"delivery":574},"payments":{"card":2471,"bit":952,"cash":662,"apple_pay":529},"customers":{"returning":3413,"new":1201},"friday":{"Tel Aviv - Florentin":51054},"heat":[[0,0,0,0,0,0,23,75,94,102,55,40,53,80,41,30,28,46,51,45,11,0,0,0],[0,0,0,0,0,0,23,67,90,81,42,33,61,74,42,32,26,41,46,38,13,0,0,0],[0,0,0,0,0,0,26,64,90,67,41,32,53,54,36,30,21,25,59,30,18,0,0,0],[0,0,0,0,0,0,13,92,79,56,46,42,46,60,36,14,23,41,51,33,17,0,0,0],[0,0,0,0,0,0,26,69,96,89,53,45,51,79,41,24,32,45,45,34,17,0,0,0],[0,0,0,0,0,0,48,153,194,171,165,154,96,60,49,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"seasonal":{"Sufganiyah":{"2025-12":55},"Hamantaschen (box)":{"2026-02":24,"2026-03":10}}},"Tel Aviv - Dizengoff":{"revenue":178983,"orders":3957,"aov":45.2,"items":11085,"refund_rate":1.52,"refunded_amount":2676,"months":{"2025-09":14658,"2025-10":13321,"2025-11":13733,"2025-12":17510,"2026-01":15255,"2026-02":15206,"2026-03":16829,"2026-04":9818,"2026-05":15851,"2026-06":17019,"2026-07":15191,"2026-08":14592},"products":[["Challah",22734,1263],["Rugelach (box)",17376,543],["Sourdough loaf",16492,589],["Croissant",12816,1068],["Cappuccino",11858,847],["Pita (pack of 6)",10644,887],["Babka",10584,252],["Cheese bourekas",10330,1033],["Cinnamon roll",9744,696],["Baguette",8820,630],["Cheesecake slice",8470,385],["Whole wheat loaf",8376,349],["Potato bourekas",6840,760],["Cookies (bag)",6800,340],["Spinach pastry",5951,541],["Fresh orange juice",5152,322],["Espresso",5080,508],["Hamantaschen (box)",476,17],["Sufganiyah",440,55]],"categories":{"Bread":67066,"Sweet":66706,"Savoury":23121,"Drinks":22090},"channels":{"in-store":2857,"online pickup":632,"delivery":468},"payments":{"card":2062,"bit":837,"cash":566,"apple_pay":492},"customers":{"returning":3007,"new":950},"friday":{"Tel Aviv - Dizengoff":44119},"heat":[[0,0,0,0,0,0,19,55,91,74,39,35,71,67,28,29,24,27,47,31,23,0,0,0],[0,0,0,0,0,0,23,59,87,65,46,25,40,65,32,18,25,32,36,39,12,0,0,0],[0,0,0,0,0,0,17,54,70,70,44,30,53,50,22,17,26,34,25,31,15,0,0,0],[0,0,0,0,0,0,18,52,71,63,28,21,52,51,37,21,17,30,34,30,20,0,0,0],[0,0,0,0,0,0,18,60,93,49,52,28,64,51,39,27,26,42,46,38,17,0,0,0],[0,0,0,0,0,0,45,131,139,139,174,117,91,72,32,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"seasonal":{"Sufganiyah":{"2025-12":55},"Hamantaschen (box)":{"2026-02":10,"2026-03":7}}},"Ramat Gan":{"revenue":141056,"orders":3104,"aov":45.4,"items":8750,"refund_rate":1.37,"refunded_amount":2121,"months":{"2025-09":11456,"2025-10":10939,"2025-11":11883,"2025-12":14470,"2026-01":12314,"2026-02":11950,"2026-03":11554,"2026-04":7970,"2026-05":12992,"2026-06":11120,"2026-07":13192,"2026-08":11216},"products":[["Challah",17514,973],["Sourdough loaf",13356,477],["Rugelach (box)",11968,374],["Croissant",10692,891],["Babka",9282,221],["Cappuccino",8876,634],["Cheese bourekas",7970,797],["Pita (pack of 6)",7740,645],["Baguette",7700,550],["Cinnamon roll",7588,542],["Whole wheat loaf",6888,287],["Potato bourekas",6057,673],["Cheesecake slice",6050,275],["Cookies (bag)",6020,301],["Spinach pastry",4719,429],["Fresh orange juice",3920,245],["Espresso",3840,384],["Hamantaschen (box)",644,23],["Sufganiyah",232,29]],"categories":{"Bread":53198,"Sweet":52476,"Savoury":18746,"Drinks":16636},"channels":{"in-store":2238,"online pickup":498,"delivery":368},"payments":{"card":1611,"bit":687,"cash":438,"apple_pay":368},"customers":{"returning":2335,"new":769},"friday":{"Ramat Gan":33719},"heat":[[0,0,0,0,0,0,18,41,65,59,33,31,33,53,24,24,14,23,42,24,18,0,0,0],[0,0,0,0,0,0,12,38,60,55,44,22,36,41,28,18,25,25,37,17,11,0,0,0],[0,0,0,0,0,0,14,37,58,51,34,27,47,47,18,13,19,23,29,16,9,0,0,0],[0,0,0,0,0,0,12,38,52,49,31,21,48,49,29,18,18,26,32,19,19,0,0,0],[0,0,0,0,0,0,13,36,70,54,30,30,46,42,22,22,21,36,39,26,17,0,0,0],[0,0,0,0,0,0,38,108,125,124,104,93,70,45,19,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"seasonal":{"Sufganiyah":{"2025-12":29},"Hamantaschen (box)":{"2026-02":16,"2026-03":7}}},"Herzliya":{"revenue":115779,"orders":2521,"aov":45.9,"items":7193,"refund_rate":1.41,"refunded_amount":1703,"months":{"2025-09":8949,"2025-10":9794,"2025-11":9235,"2025-12":10279,"2026-01":10022,"2026-02":9973,"2026-03":10311,"2026-04":7704,"2026-05":9695,"2026-06":11051,"2026-07":10182,"2026-08":8584},"products":[["Challah",14148,786],["Sourdough loaf",10724,383],["Rugelach (box)",9824,307],["Croissant",8700,725],["Cappuccino",7392,528],["Babka",6888,164],["Cinnamon roll",6790,485],["Cheese bourekas",6430,643],["Pita (pack of 6)",6372,531],["Cheesecake slice",6336,288],["Baguette",5978,427],["Whole wheat loaf",5664,236],["Potato bourekas",5040,560],["Cookies (bag)",4820,241],["Spinach pastry",3641,331],["Fresh orange juice",3264,204],["Espresso",3180,318],["Hamantaschen (box)",420,15],["Sufganiyah",168,21]],"categories":{"Sweet":43946,"Bread":42886,"Savoury":15111,"Drinks":13836},"channels":{"in-store":1792,"online pickup":416,"delivery":313},"payments":{"card":1343,"bit":529,"cash":369,"apple_pay":280},"customers":{"returning":1923,"new":598},"friday":{"Herzliya":29765},"heat":[[0,0,0,0,0,0,16,41,52,41,26,20,27,46,24,13,8,19,31,27,5,0,0,0],[0,0,0,0,0,0,11,37,55,24,23,15,31,49,21,17,9,28,27,29,9,0,0,0],[0,0,0,0,0,0,10,30,31,41,23,18,29,26,22,12,19,21,25,18,15,0,0,0],[0,0,0,0,0,0,11,39,42,35,23,25,36,38,16,10,10,15,24,17,11,0,0,0],[0,0,0,0,0,0,7,37,57,36,30,27,41,44,27,14,19,21,27,26,13,0,0,0],[0,0,0,0,0,0,19,98,115,82,98,71,62,51,26,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"seasonal":{"Sufganiyah":{"2025-12":21},"Hamantaschen (box)":{"2026-02":13,"2026-03":2}}},"by_branch":{"Tel Aviv - Florentin":211247,"Tel Aviv - Dizengoff":178983,"Ramat Gan":141056,"Herzliya":115779},"branch_months":{"Tel Aviv - Florentin":{"2025-09":17721,"2025-10":16819,"2025-11":17761,"2025-12":18288,"2026-01":18766,"2026-02":17905,"2026-03":17845,"2026-04":13102,"2026-05":19965,"2026-06":18259,"2026-07":16899,"2026-08":17917},"Tel Aviv - Dizengoff":{"2025-09":14658,"2025-10":13321,"2025-11":13733,"2025-12":17510,"2026-01":15255,"2026-02":15206,"2026-03":16829,"2026-04":9818,"2026-05":15851,"2026-06":17019,"2026-07":15191,"2026-08":14592},"Ramat Gan":{"2025-09":11456,"2025-10":10939,"2025-11":11883,"2025-12":14470,"2026-01":12314,"2026-02":11950,"2026-03":11554,"2026-04":7970,"2026-05":12992,"2026-06":11120,"2026-07":13192,"2026-08":11216},"Herzliya":{"2025-09":8949,"2025-10":9794,"2025-11":9235,"2025-12":10279,"2026-01":10022,"2026-02":9973,"2026-03":10311,"2026-04":7704,"2026-05":9695,"2026-06":11051,"2026-07":10182,"2026-08":8584}},"log":{"rows_in":29142,"duplicates_removed":15,"rejected":12,"rows_written":29115,"adds_up":true,"distinct_orders":14421,"revenue_completed":647065,"branches":["Herzliya","Ramat Gan","Tel Aviv - Dizengoff","Tel Aviv - Florentin"],"fixes":{"branch":696,"order_datetime":581,"status":569,"quantity":423,"line_total (filled from qty x price)":301,"product":286,"unit_price":122}},"range":["2025-09-01","2026-08-31"]};/*END*/
+
+const HE_BRANCH = {"Tel Aviv - Florentin":"פלורנטין, ת\"א","Tel Aviv - Dizengoff":"דיזנגוף, ת\"א","Ramat Gan":"רמת גן","Herzliya":"הרצליה"};
+const HE_PROD = {"Challah":"חלה","Croissant":"קרואסון","Cheese bourekas":"בורקס גבינה","Cappuccino":"קפוצ'ינו","Pita (pack of 6)":"פיתות (6)","Potato bourekas":"בורקס תפוחי אדמה","Cinnamon roll":"שנקי קינמון","Baguette":"באגט","Sourdough loaf":"לחם מחמצת","Espresso":"אספרסו","Rugelach (box)":"רוגלך (קופסה)","Spinach pastry":"מאפה תרד","Cheesecake slice":"פרוסת עוגת גבינה","Whole wheat loaf":"לחם מלא","Cookies (bag)":"עוגיות (שקית)","Babka":"בבקה","Fresh orange juice":"מיץ תפוזים סחוט","Sufganiyah":"סופגנייה","Hamantaschen (box)":"אוזני המן (קופסה)"};
+const HE = {"in-store":"בחנות","delivery":"משלוח","online pickup":"איסוף אונליין","card":"כרטיס אשראי","bit":"ביט","cash":"מזומן","apple_pay":"Apple Pay","Bread":"לחמים","Sweet":"מתוקים","Savoury":"מלוחים","Drinks":"משקאות"};
+const HE_MONTH = ["ינו","פבר","מרץ","אפר","מאי","יוני","יולי","אוג","ספט","אוק","נוב","דצמ"];
+const DAYS = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+const COLORS = ["#f5a524","#2dd4bf","#8b7cff","#5aa9ff","#f05252","#a3e635"];
+const BCOL = {"Tel Aviv - Florentin":"#f5a524","Tel Aviv - Dizengoff":"#2dd4bf","Ramat Gan":"#8b7cff","Herzliya":"#5aa9ff"};
+const nf = new Intl.NumberFormat("he-IL");
+const ils = v => "₪" + nf.format(Math.round(v));
+const mlab = k => { const [y,m] = k.split("-"); return HE_MONTH[+m-1] + " " + y.slice(2); };
+
+Chart.defaults.color = "#8b97ad";
+Chart.defaults.font.family = "Heebo, sans-serif";
+Chart.defaults.borderColor = "#243049";
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.tooltip.rtl = true;
+
+const charts = {};
+function draw(id, cfg){ if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+const donut = (obj) => ({type:"doughnut",data:{labels:Object.keys(obj).map(k=>HE[k]||k),datasets:[{data:Object.values(obj),backgroundColor:COLORS,borderColor:"#121826",borderWidth:3}]},options:{maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",rtl:true},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return " "+c.label+": "+nf.format(c.raw)+" ("+(100*c.raw/t).toFixed(1)+"%)";}}}}}});
+
+let current = "all";
+function render(){
+  const D = DATA[current];
+  document.getElementById("k-rev").textContent = ils(D.revenue);
+  document.getElementById("k-ord").textContent = nf.format(D.orders);
+  document.getElementById("k-aov").textContent = ils(D.aov);
+  document.getElementById("k-items").textContent = nf.format(D.items);
+  document.getElementById("k-ref").textContent = D.refund_rate + "%";
+  document.getElementById("k-refamt").textContent = ils(D.refunded_amount);
+
+  const mk = Object.keys(DATA.all.months);
+  const sets = current === "all"
+    ? Object.keys(DATA.branch_months).map(b => ({label:HE_BRANCH[b],data:mk.map(k=>DATA.branch_months[b][k]||0),borderColor:BCOL[b],backgroundColor:BCOL[b],tension:.35,pointRadius:2}))
+    : [{label:HE_BRANCH[current],data:mk.map(k=>D.months[k]||0),borderColor:BCOL[current],backgroundColor:BCOL[current]+"33",fill:true,tension:.35,pointRadius:3}];
+  draw("c-months",{type:"line",data:{labels:mk.map(mlab),datasets:sets},options:{maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",rtl:true},tooltip:{callbacks:{label:c=>" "+c.dataset.label+": "+ils(c.raw)}}},scales:{y:{ticks:{callback:v=>ils(v)}}}}});
+
+  const bb = Object.entries(DATA.by_branch).sort((a,b)=>b[1]-a[1]);
+  draw("c-branch",{type:"bar",data:{labels:bb.map(x=>HE_BRANCH[x[0]]),datasets:[{data:bb.map(x=>x[1]),backgroundColor:bb.map(x=>current==="all"||current===x[0]?BCOL[x[0]]:"#2a3550"),borderRadius:6}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+ils(c.raw)}}},scales:{y:{ticks:{callback:v=>ils(v)}}}}});
+
+  const top = D.products.slice(0,10);
+  draw("c-prod",{type:"bar",data:{labels:top.map(p=>HE_PROD[p[0]]||p[0]),datasets:[{data:top.map(p=>p[1]),backgroundColor:top.map((_,i)=>i===0?"#f5a524":"#8b7cff"),borderRadius:5}]},options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+ils(c.raw)+" · "+nf.format(top[c.dataIndex][2])+" יח׳"}}},scales:{x:{ticks:{callback:v=>ils(v)}},y:{position:"right"}}}});
+
+  draw("c-chan",donut(D.channels));
+  draw("c-pay",donut(D.payments));
+  draw("c-cat",donut(D.categories));
+
+  const sk = mk;
+  const sz = D.seasonal || {};
+  draw("c-season",{type:"bar",data:{labels:sk.map(mlab),datasets:[{label:"סופגנייה",data:sk.map(k=>(sz["Sufganiyah"]||{})[k]||0),backgroundColor:"#f5a524",borderRadius:4},{label:"אוזני המן",data:sk.map(k=>(sz["Hamantaschen (box)"]||{})[k]||0),backgroundColor:"#2dd4bf",borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom",rtl:true}}}});
+
+  // heatmap: rows Sun..Sat, cols 0..23 hours (left to right)
+  const h = document.getElementById("heat"); h.innerHTML = "";
+  const max = Math.max(...D.heat.flat());
+  h.appendChild(Object.assign(document.createElement("div"),{className:"hr"}));
+  for (let c=0;c<24;c++) h.appendChild(Object.assign(document.createElement("div"),{className:"hr",textContent:c%3===0?c:""}));
+  D.heat.forEach((row,d)=>{
+    h.appendChild(Object.assign(document.createElement("div"),{className:"lb",textContent:DAYS[d]}));
+    row.forEach((v,c)=>{const e=document.createElement("div");const t=max?v/max:0;e.style.background=v?`rgba(245,165,36,${(0.08+0.92*t).toFixed(2)})`:"#0d1320";e.title=`יום ${DAYS[d]} ${c}:00 · ${v} הזמנות`;h.appendChild(e);});
+  });
+
+  const fr = Object.entries(D.friday);
+  document.getElementById("t-fri").innerHTML = "<tr><th>סניף</th><th style='text-align:left'>הכנסות בימי שישי</th></tr>" + fr.map(([b,v])=>`<tr><td>${HE_BRANCH[b]}</td><td class="num">${ils(v)}</td></tr>`).join("");
+}
+
+function initStatic(){
+  document.getElementById("range").textContent = `תקופה: ${DATA.range[0].split("-").reverse().join(".")} עד ${DATA.range[1].split("-").reverse().join(".")} · 4 סניפים`;
+  const f = document.getElementById("filters");
+  [["all","כל הסניפים"]].concat(Object.keys(HE_BRANCH).map(b=>[b,HE_BRANCH[b]])).forEach(([k,l])=>{
+    const b=document.createElement("button");b.textContent=l;b.className=k===current?"on":"";
+    b.onclick=()=>{current=k;[...f.children].forEach(x=>x.className="");b.className="on";render();};f.appendChild(b);
+  });
+  const L = DATA.log;
+  document.getElementById("flow").innerHTML = [
+    ["שורות בקובץ הגולמי",L.rows_in,""],["כפילויות מדויקות שהוסרו","− "+L.duplicates_removed,"neg"],["נדחו (לבדיקה אנושית)","− "+L.rejected,"neg"],["שורות שנכתבו",L.rows_written,"ok"],["הזמנות ייחודיות",L.distinct_orders,"ok"],["הכנסות, הושלמו",ils(L.revenue_completed),"ok"]
+  ].map(([t,v,c])=>`<div class="row ${c}"><span>${t}</span><b>${typeof v==="number"?nf.format(v):v}</b></div>`).join("") + `<div class="row ${L.adds_up?"ok":"neg"}"><span>החשבון נסגר?</span><b>${L.adds_up?"כן":"לא"}</b></div>`;
+  const HEFIX = {"branch":"שם סניף","order_datetime":"פורמט תאריך","status":"סטטוס","quantity":"כמות במילים","line_total (filled from qty x price)":"סכום חסר הושלם","product":"שם מוצר","unit_price":"מחיר כטקסט (₪)","line_total (recomputed, mismatch)":"סכום שגוי חושב מחדש"};
+  const fx = Object.entries(L.fixes), fm = Math.max(...fx.map(x=>x[1]));
+  document.getElementById("fixes").innerHTML = "<div class='hint' style='margin:0'>תיקונים שבוצעו בכניסה</div>" + fx.map(([k,v])=>`<div class="fix"><span>${HEFIX[k]||k}</span><span class="bar"><i style="width:${100*v/fm}%"></i></span><span class="n">${nf.format(v)}</span></div>`).join("");
+}
+initStatic(); render();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+.env
+__pycache__/
+# course data: not published without the lecturer's approval
+data/*.csv

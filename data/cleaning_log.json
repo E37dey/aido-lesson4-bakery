@@ -1,0 +1,24 @@
+{
+  "rows_in": 29142,
+  "duplicates_removed": 15,
+  "rejected": 12,
+  "rows_written": 29115,
+  "adds_up": true,
+  "distinct_orders": 14421,
+  "revenue_completed": 647065,
+  "branches": [
+    "Herzliya",
+    "Ramat Gan",
+    "Tel Aviv - Dizengoff",
+    "Tel Aviv - Florentin"
+  ],
+  "fixes": {
+    "branch": 696,
+    "order_datetime": 581,
+    "status": 569,
+    "quantity": 423,
+    "line_total (filled from qty x price)": 301,
+    "product": 286,
+    "unit_price": 122
+  }
+}
