@@ -38,6 +38,6 @@ Branches, ‏Products, ‏Weekly sales (מקושר ל-Branches), ‏Monthly prod
 `tests/airtable_mock.html` מריץ את הדשבורד החי על נתוני דמה בלי טוקן.
 
 ## מקור חיצוני: Hebcal API (בונוס)
-פאנל "חגים מול יום רגיל" ב-`index.html` מושך בזמן אמת את חגי ישראל מ-`hebcal.com` (בקשת GET, בלי מפתח, CORS פתוח), ומשווה את ההכנסה היומית הממוצעת בכל חג להכנסה ביום פתיחה רגיל.
+עמוד נפרד, [holidays.html](https://e37dey.github.io/aido-lesson4-bakery/holidays.html), ופאנל "חגים מול יום רגיל" ב-`index.html` מושך בזמן אמת את חגי ישראל מ-`hebcal.com` (בקשת GET, בלי מפתח, CORS פתוח), ומשווה את ההכנסה היומית הממוצעת בכל חג להכנסה ביום פתיחה רגיל.
 
-הקוד: הפונקציה `holidays()` ב-`index.html`. ה-API נמצא ברשימת public-apis תחת Calendar, בשם Hebrew Calendar.
+הקוד: `holidays.html` מראה את הבקשה, את התשובה הגולמית ואת ההצלבה עם המכירות. ה-API נמצא ברשימת public-apis תחת Calendar, בשם Hebrew Calendar.

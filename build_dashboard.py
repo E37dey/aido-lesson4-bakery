@@ -75,9 +75,14 @@ for r in rows:
 data["daily"] = {k: round(v) for k, v in sorted(daily.items())}
 data["range"] = [min(r["order_datetime"] for r in rows)[:10], max(r["order_datetime"] for r in rows)[:10]]
 
-html = open("index.html", encoding="utf-8").read()
-blob = "/*DATA*/const DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";/*END*/"
-html, n = re.subn(r"/\*DATA\*/.*?/\*END\*/", lambda m: blob, html, flags=re.S)
-assert n == 1, "DATA marker not found"
-open("index.html", "w", encoding="utf-8").write(html)
+def inject(page, payload):
+    html = open(page, encoding="utf-8").read()
+    blob = "/*DATA*/const DATA = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";/*END*/"
+    html, n = re.subn(r"/\*DATA\*/.*?/\*END\*/", lambda m: blob, html, flags=re.S)
+    assert n == 1, "DATA marker not found in " + page
+    open(page, "w", encoding="utf-8").write(html)
+
+
+inject("index.html", data)
+inject("holidays.html", {"daily": data["daily"], "range": data["range"]})
 print("revenue", data["all"]["revenue"], "orders", data["all"]["orders"], "friday", data["all"]["friday"])

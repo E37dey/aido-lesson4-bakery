@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מאפייה · חגים מ-API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+.mono{font-family:"JetBrains Mono",monospace}
+.code{direction:ltr;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.6;color:#c9d3e6;overflow:auto;max-height:260px;white-space:pre}
+.code .k{color:var(--acc)}.code .s{color:var(--acc2)}
+.flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px}
+.step{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;position:relative}
+.step b{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px}
+.step b i{font-style:normal;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#111;font-size:12px}
+.step span{color:var(--mute);font-size:12.5px;line-height:1.5}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.pill{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.pill.ok{color:var(--acc2);border-color:rgba(45,212,191,.4)}
+.pill.bad{color:var(--acc3);border-color:rgba(240,82,82,.4)}
+.kpi .val.up{color:var(--acc2)}.kpi .val.down{color:var(--acc3)}
+.kpi .note{color:var(--mute);font-size:12px;margin-top:4px}
+td.ltr{direction:ltr;text-align:right;font-family:"JetBrains Mono",monospace}
+.pos{color:var(--acc2)}.neg{color:var(--acc3)}
+@media (max-width:1000px){.flow4{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.flow4{grid-template-columns:1fr}#t-hol{font-size:12px}#t-hol td,#t-hol th{padding:6px 3px}}
+.card{overflow-x:auto}.code{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1><small>AiDO · מטלה 4 · בונוס: מקור מידע חיצוני</small>חגים ומכירות המאפייה</h1>
+    <div class="sub">חגי ישראל נמשכים בזמן אמת מ-Hebcal API ומוצלבים עם נתוני המכירות לפי תאריך.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <a class="navlink" href="index.html">← הדשבורד הראשי</a>
+    <a class="navlink" href="airtable.html">← הגרסה החיה מ-Airtable</a>
+  </div>
+</header>
+
+<div class="grid">
+  <div class="card s12">
+    <h2>איך זה עובד</h2>
+    <div class="flow4">
+      <div class="step"><b><i>1</i>בקשה ל-API</b><span>הדפדפן שולח GET ל-hebcal.com עם טווח התאריכים של הנתונים. בלי מפתח: זה מידע ציבורי, וה-API פתוח לקריאה מדפדפן (CORS).</span></div>
+      <div class="step"><b><i>2</i>תשובה ב-JSON</b><span>רשימה של אירועים, ולכל אחד תאריך ושם בעברית. לוקחים רק חגים מרכזיים.</span></div>
+      <div class="step"><b><i>3</i>הצלבה לפי תאריך</b><span>מקבצים את ימי כל חג (כולל ערב החג), ומחברים כל תאריך להכנסה של אותו יום מהנתונים הנקיים.</span></div>
+      <div class="step"><b><i>4</i>השוואה</b><span>הכנסה יומית ממוצעת בחג מול יום פתיחה רגיל. ימים בלי מכירות נספרים כימים סגורים.</span></div>
+    </div>
+  </div>
+
+  <div class="card kpi"><div class="lab">חגים שנמצאו</div><div class="val" id="k-n">…</div></div>
+  <div class="card kpi"><div class="lab">ימי חג בתקופה</div><div class="val" id="k-days">…</div></div>
+  <div class="card kpi"><div class="lab">ימי חג סגורים</div><div class="val" id="k-closed">…</div></div>
+  <div class="card kpi"><div class="lab">יום פתיחה רגיל</div><div class="val" id="k-avg">…</div></div>
+  <div class="card kpi"><div class="lab">הירידה הגדולה</div><div class="val down" id="k-down">…</div><div class="note" id="k-down-n"></div></div>
+  <div class="card kpi"><div class="lab">העלייה הגדולה</div><div class="val up" id="k-up">…</div><div class="note" id="k-up-n"></div></div>
+
+  <div class="card s12"><h2>הכנסה יומית לאורך השנה</h2><div class="hint">כל נקודה היא יום. העמודות הכתומות הן ימי חג לפי Hebcal. אפשר לראות את החור של פסח באפריל.</div><div class="ch tall"><canvas id="c-daily"></canvas></div></div>
+
+  <div class="card s6"><h2>שינוי בהכנסה היומית בחג</h2><div class="hint">אחוז מול יום פתיחה רגיל</div><div class="ch"><canvas id="c-pct"></canvas></div></div>
+  <div class="card s6"><h2>לפי חג</h2><div class="hint">תאריכים מה-API, הכנסות מהנתונים הנקיים</div><table id="t-hol"></table></div>
+
+  <div class="card s7"><h2>הבקשה, כפי שנשלחה</h2>
+    <div class="meta" id="meta"><span class="pill">שולח...</span></div>
+    <div class="code" id="req"></div>
+  </div>
+  <div class="card s5"><h2>התשובה הגולמית</h2><div class="hint">3 האירועים הראשונים מתוך התשובה, בלי עריכה</div><div class="code" id="res">…</div></div>
+
+  <div class="card s12"><h2>מה זה אומר לבעלת המאפייה</h2><div class="hint">תובנות שהצליבו מקור חיצוני עם הנתונים שלה</div><div id="insights" style="line-height:1.9;font-size:14px"></div></div>
+</div>
+<footer>מקור החגים: Hebcal API (hebcal.com), מופיע ברשימת public-apis בשם Hebrew Calendar. מקור המכירות: הנתונים הנקיים של המאפייה. העמוד לקריאה בלבד.</footer>
+</div>
+
+<script>
+/*DATA*/const DATA = {"daily":{"2025-09-01":1649,"2025-09-02":1636,"2025-09-03":1735,"2025-09-04":2190,"2025-09-05":3372,"2025-09-07":1646,"2025-09-08":1949,"2025-09-09":2127,"2025-09-10":2022,"2025-09-11":2274,"2025-09-12":3389,"2025-09-14":1767,"2025-09-15":1523,"2025-09-16":1673,"2025-09-17":1770,"2025-09-18":2152,"2025-09-19":2948,"2025-09-21":3002,"2025-09-22":2952,"2025-09-25":2082,"2025-09-26":2911,"2025-09-28":2122,"2025-09-29":1799,"2025-09-30":2094,"2025-10-01":2090,"2025-10-03":3389,"2025-10-05":2653,"2025-10-06":2096,"2025-10-08":1409,"2025-10-09":2007,"2025-10-10":3150,"2025-10-12":1775,"2025-10-13":1895,"2025-10-15":2183,"2025-10-16":1884,"2025-10-17":2933,"2025-10-19":2136,"2025-10-20":1726,"2025-10-21":1455,"2025-10-22":1607,"2025-10-23":1973,"2025-10-24":2475,"2025-10-26":1844,"2025-10-27":2330,"2025-10-28":1501,"2025-10-29":1761,"2025-10-30":2193,"2025-10-31":2408,"2025-11-02":1851,"2025-11-03":1885,"2025-11-04":1660,"2025-11-05":1725,"2025-11-06":2221,"2025-11-07":3204,"2025-11-09":2136,"2025-11-10":1704,"2025-11-11":1723,"2025-11-12":1625,"2025-11-13":2320,"2025-11-14":3145,"2025-11-16":2274,"2025-11-17":1821,"2025-11-18":1952,"2025-11-19":2109,"2025-11-20":2186,"2025-11-21":3127,"2025-11-23":2002,"2025-11-24":1648,"2025-11-25":1610,"2025-11-26":1964,"2025-11-27":2088,"2025-11-28":3022,"2025-11-30":1610,"2025-12-01":1447,"2025-12-02":1876,"2025-12-03":1751,"2025-12-04":2634,"2025-12-05":3366,"2025-12-07":1987,"2025-12-08":1533,"2025-12-09":1721,"2025-12-10":2132,"2025-12-11":2066,"2025-12-12":3144,"2025-12-14":2229,"2025-12-15":1980,"2025-12-16":2341,"2025-12-17":2046,"2025-12-18":2816,"2025-12-19":4808,"2025-12-21":2497,"2025-12-22":2594,"2025-12-23":1965,"2025-12-24":1774,"2025-12-25":1539,"2025-12-26":3261,"2025-12-28":1710,"2025-12-29":1817,"2025-12-30":1810,"2025-12-31":1703,"2026-01-01":2256,"2026-01-02":3147,"2026-01-04":1848,"2026-01-05":1734,"2026-01-06":2020,"2026-01-07":2051,"2026-01-08":2115,"2026-01-09":2530,"2026-01-11":1813,"2026-01-12":2375,"2026-01-13":1937,"2026-01-14":2097,"2026-01-15":2027,"2026-01-16":3480,"2026-01-18":1986,"2026-01-19":1634,"2026-01-20":1686,"2026-01-21":1573,"2026-01-22":1978,"2026-01-23":2954,"2026-01-25":2425,"2026-01-26":1475,"2026-01-27":1861,"2026-01-28":2242,"2026-01-29":2215,"2026-01-30":2898,"2026-02-01":2000,"2026-02-02":1849,"2026-02-03":1536,"2026-02-04":1974,"2026-02-05":1858,"2026-02-06":3659,"2026-02-08":1551,"2026-02-09":1856,"2026-02-10":2009,"2026-02-11":2052,"2026-02-12":2406,"2026-02-13":3179,"2026-02-15":2197,"2026-02-16":1672,"2026-02-17":1797,"2026-02-18":1745,"2026-02-19":1948,"2026-02-20":3142,"2026-02-22":2586,"2026-02-23":1620,"2026-02-24":2426,"2026-02-25":2136,"2026-02-26":2808,"2026-02-27":5028,"2026-03-01":2555,"2026-03-02":2537,"2026-03-03":2882,"2026-03-04":1649,"2026-03-05":1885,"2026-03-06":2248,"2026-03-08":1906,"2026-03-09":1626,"2026-03-10":1794,"2026-03-11":1960,"2026-03-12":1749,"2026-03-13":3132,"2026-03-15":2310,"2026-03-16":1783,"2026-03-17":1691,"2026-03-18":2036,"2026-03-19":1705,"2026-03-20":3082,"2026-03-22":2225,"2026-03-23":1995,"2026-03-24":1735,"2026-03-25":1933,"2026-03-26":2568,"2026-03-27":2836,"2026-03-29":1691,"2026-03-30":1565,"2026-03-31":1461,"2026-04-01":1558,"2026-04-10":3167,"2026-04-12":1941,"2026-04-13":1631,"2026-04-14":2063,"2026-04-15":2144,"2026-04-16":2123,"2026-04-17":2996,"2026-04-19":1425,"2026-04-20":1827,"2026-04-21":2178,"2026-04-23":2280,"2026-04-24":3130,"2026-04-26":2340,"2026-04-27":2044,"2026-04-28":1930,"2026-04-29":1774,"2026-04-30":2043,"2026-05-01":3617,"2026-05-03":2213,"2026-05-04":2007,"2026-05-05":1999,"2026-05-06":1770,"2026-05-07":2401,"2026-05-08":3409,"2026-05-10":2156,"2026-05-11":2292,"2026-05-12":1717,"2026-05-13":2144,"2026-05-14":2365,"2026-05-15":3027,"2026-05-17":2631,"2026-05-18":2283,"2026-05-19":2876,"2026-05-20":2710,"2026-05-21":2730,"2026-05-24":2017,"2026-05-25":1779,"2026-05-26":1985,"2026-05-27":1874,"2026-05-28":1853,"2026-05-29":2833,"2026-05-31":1815,"2026-06-01":2385,"2026-06-02":1599,"2026-06-03":2313,"2026-06-04":2268,"2026-06-05":3284,"2026-06-07":2237,"2026-06-08":1930,"2026-06-09":2034,"2026-06-10":2100,"2026-06-11":2361,"2026-06-12":2903,"2026-06-14":2124,"2026-06-15":1891,"2026-06-16":1677,"2026-06-17":1530,"2026-06-18":2269,"2026-06-19":3159,"2026-06-21":2255,"2026-06-22":1627,"2026-06-23":1691,"2026-06-24":1853,"2026-06-25":2281,"2026-06-26":3507,"2026-06-28":2165,"2026-06-29":1744,"2026-06-30":2262,"2026-07-01":1710,"2026-07-02":2029,"2026-07-03":3004,"2026-07-05":2057,"2026-07-06":1680,"2026-07-07":1961,"2026-07-08":1722,"2026-07-09":1981,"2026-07-10":3027,"2026-07-12":1754,"2026-07-13":1615,"2026-07-14":1339,"2026-07-15":1883,"2026-07-16":2233,"2026-07-17":3031,"2026-07-19":1542,"2026-07-20":1752,"2026-07-21":1483,"2026-07-22":1644,"2026-07-23":2478,"2026-07-24":3514,"2026-07-26":1817,"2026-07-27":2208,"2026-07-28":1322,"2026-07-29":1890,"2026-07-30":1921,"2026-07-31":2867,"2026-08-02":1954,"2026-08-03":1502,"2026-08-04":1601,"2026-08-05":1773,"2026-08-06":1946,"2026-08-07":2496,"2026-08-09":1722,"2026-08-10":1661,"2026-08-11":1288,"2026-08-12":1876,"2026-08-13":1851,"2026-08-14":3716,"2026-08-16":1777,"2026-08-17":2005,"2026-08-18":1488,"2026-08-19":1557,"2026-08-20":1919,"2026-08-21":3615,"2026-08-23":1868,"2026-08-24":1898,"2026-08-25":2080,"2026-08-26":1959,"2026-08-27":2159,"2026-08-28":2988,"2026-08-30":1823,"2026-08-31":1787},"range":["2025-09-01","2026-08-31"]};/*END*/
+
+const HOLIDAYS = ["ראש השנה","יום כיפור","סוכות","שמיני עצרת","חנוכה","פורים","פסח","שבועות","תשעה באב"];
+const nf = new Intl.NumberFormat("he-IL");
+const ils = v => "₪" + nf.format(Math.round(v));
+const fmt = d => d.split("-").reverse().slice(0,2).join(".");
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]);
+Chart.defaults.color = "#8b97ad"; Chart.defaults.font.family = "Heebo, sans-serif"; Chart.defaults.borderColor = "#243049";
+Chart.defaults.plugins.legend.labels.boxWidth = 10; Chart.defaults.plugins.tooltip.rtl = true;
+
+const [START, END] = DATA.range;
+const URL_ = `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=off&mod=off&nx=off&ss=off&mf=off&c=off&s=off&i=on&lg=he&start=${START}&end=${END}`;
+document.getElementById("req").innerHTML =
+  `<span class="k">GET</span> https://www.hebcal.com/hebcal\n` +
+  URL_.split("?")[1].split("&").map((p,i)=>`  ${i?"&":"?"}${p.replace(/=(.*)/, '=<span class="s">$1</span>')}`).join("\n") +
+  `\n\n<span class="k">// i=on    Israel holiday schedule</span>\n<span class="k">// lg=he   names in Hebrew</span>\n<span class="k">// maj=on  major holidays only</span>\n<span class="k">// no Authorization header: public data, no key</span>`;
+
+const t0 = performance.now();
+fetch(URL_).then(r => { const ms = Math.round(performance.now() - t0); if (!r.ok) throw new Error("HTTP " + r.status); return r.json().then(j => [j, r.status, ms]); })
+.then(([j, status, ms]) => {
+  document.getElementById("meta").innerHTML = `<span class="pill ok">HTTP ${status}</span><span class="pill">${ms} ms</span><span class="pill">${j.items.length} אירועים</span><span class="pill">בלי מפתח</span>`;
+  document.getElementById("res").textContent = JSON.stringify({title: j.title, items: j.items.slice(0,3).map(x => ({title:x.title, date:x.date, hebrew:x.hebrew, category:x.category}))}, null, 2);
+
+  // group days per holiday (Shmini Atzeret belongs to Sukkot)
+  const per = {}, isHol = {};
+  j.items.forEach(x => { const g = HOLIDAYS.find(h => x.hebrew.includes(h)); if (!g) return; const k = g === "שמיני עצרת" ? "סוכות" : g; (per[k] = per[k] || []).push(x.date); isHol[x.date] = k; });
+  const days = Object.keys(DATA.daily).sort();
+  const open = days.map(d => DATA.daily[d]).filter(v => v > 0), avg = open.reduce((s,v) => s+v, 0) / open.length;
+  const rows = Object.entries(per).map(([g, ds]) => { const u = [...new Set(ds)].sort(); const v = u.map(d => DATA.daily[d] || 0); const m = v.reduce((s,x) => s+x, 0) / v.length;
+    return {g, from:u[0], to:u[u.length-1], days:u.length, closed:v.filter(x => !x).length, avg:m, pct:Math.round(100*(m/avg-1))}; });
+
+  const allHolDays = rows.reduce((s,r) => s + r.days, 0), allClosed = rows.reduce((s,r) => s + r.closed, 0);
+  const dn = rows.reduce((a,b) => b.pct < a.pct ? b : a), up = rows.reduce((a,b) => b.pct > a.pct ? b : a);
+  document.getElementById("k-n").textContent = rows.length;
+  document.getElementById("k-days").textContent = allHolDays;
+  document.getElementById("k-closed").textContent = allClosed;
+  document.getElementById("k-avg").textContent = ils(avg);
+  document.getElementById("k-down").textContent = dn.pct + "%"; document.getElementById("k-down-n").textContent = dn.g;
+  document.getElementById("k-up").textContent = "+" + up.pct + "%"; document.getElementById("k-up-n").textContent = up.g;
+
+  // daily line + holiday bars (every calendar day in range, so closed days show as 0)
+  const cal = []; for (let d = new Date(START + "T00:00:00Z"); d <= new Date(END + "T00:00:00Z"); d.setUTCDate(d.getUTCDate()+1)) cal.push(d.toISOString().slice(0,10));
+  const maxV = Math.max(...open);
+  new Chart(document.getElementById("c-daily"), {data:{labels: cal.map(fmt), datasets:[
+    {type:"bar", label:"יום חג", data: cal.map(d => isHol[d] ? maxV : null), backgroundColor:"rgba(245,165,36,.28)", barPercentage:1, categoryPercentage:1, order:2},
+    {type:"line", label:"הכנסה יומית", data: cal.map(d => DATA.daily[d] || 0), borderColor:"#8b7cff", backgroundColor:"#8b7cff", pointRadius:0, borderWidth:1.5, tension:.15, order:1}]},
+    options:{maintainAspectRatio:false, interaction:{mode:"index", intersect:false}, plugins:{legend:{position:"bottom", rtl:true}, tooltip:{callbacks:{
+      title: it => cal[it[0].dataIndex].split("-").reverse().join(".") + (isHol[cal[it[0].dataIndex]] ? " · " + isHol[cal[it[0].dataIndex]] : ""),
+      label: c => c.dataset.type === "bar" ? null : " " + ils(c.raw)}}},
+      scales:{x:{ticks:{maxTicksLimit:12}}, y:{ticks:{callback: v => ils(v)}}}}});
+
+  new Chart(document.getElementById("c-pct"), {type:"bar", data:{labels: rows.map(r => r.g), datasets:[{data: rows.map(r => r.pct), backgroundColor: rows.map(r => r.pct >= 0 ? "#2dd4bf" : "#f05252"), borderRadius:5}]},
+    options:{maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => " " + (c.raw > 0 ? "+" : "") + c.raw + "% מול יום רגיל"}}}, scales:{y:{ticks:{callback: v => v + "%"}}}}});
+
+  document.getElementById("t-hol").innerHTML = "<tr><th>חג</th><th>תאריכים</th><th>סגור</th><th>ממוצע ליום</th><th>שינוי</th></tr>" +
+    rows.map(r => `<tr><td>${esc(r.g)}</td><td class="ltr">${fmt(r.from)} – ${fmt(r.to)}</td><td class="num">${r.closed}/${r.days}</td><td class="num">${ils(r.avg)}</td><td class="num ${r.pct>=0?"pos":"neg"}" dir="ltr">${r.pct>0?"+":""}${r.pct}%</td></tr>`).join("");
+
+  const R = Object.fromEntries(rows.map(r => [r.g, r]));
+  const ins = [];
+  if (R["פסח"]) ins.push(`<b>פסח</b> מסביר את הירידה באפריל: המאפייה סגורה ${R["פסח"].closed} מתוך ${R["פסח"].days} ימים (${R["פסח"].pct}%). כדאי לצמצם הזמנות קמח ושמרים בשבועיים שלפני, ולתכנן חופשות צוות לתקופה הזאת.`);
+  if (R["פורים"]) ins.push(`<b>פורים</b> הוא החג הכי חזק (${R["פורים"].pct > 0 ? "+" : ""}${R["פורים"].pct}%), ואוזני המן נמכרים רק סביבו. כדאי להגדיל אפייה ומשמרות בימים שלפניו.`);
+  if (R["חנוכה"]) ins.push(`<b>חנוכה</b> מעלה את ההכנסה ב-${R["חנוכה"].pct}%, והסופגניות נמכרות רק בדצמבר. אפשר להתחיל לאפות ולפרסם כמה ימים לפני הנר הראשון.`);
+  ins.push(`<b>חגי תשרי ושבועות</b> מורידים את ההכנסה, בעיקר בגלל ימים סגורים. כדאי לתכנן את המלאי כך שלא יישארו מאפים טריים לפני יום סגור.`);
+  ins.push(`<b>לשנה הבאה:</b> משנים את טווח התאריכים בבקשה ומקבלים את לוח החגים מראש, בלי לעדכן שום דבר ביד.`);
+  document.getElementById("insights").innerHTML = ins.map(x => `<div>• ${x}</div>`).join("");
+}).catch(e => {
+  document.getElementById("meta").innerHTML = `<span class="pill bad">${esc(e.message)}</span>`;
+  document.getElementById("res").textContent = "לא הצלחתי לקרוא מ-Hebcal. העמוד הזה צריך חיבור לאינטרנט.";
+});
+</script>
+</body>
+</html>
