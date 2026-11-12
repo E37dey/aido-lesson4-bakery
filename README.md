@@ -39,3 +39,5 @@ Branches, ‏Products, ‏Weekly sales (מקושר ל-Branches), ‏Monthly prod
 
 ## מקור חיצוני: Hebcal API (בונוס)
 פאנל "חגים מול יום רגיל" ב-`index.html` מושך בזמן אמת את חגי ישראל מ-`hebcal.com` (בקשת GET, בלי מפתח, CORS פתוח), ומשווה את ההכנסה היומית הממוצעת בכל חג להכנסה ביום פתיחה רגיל.
+
+הקוד: הפונקציה `holidays()` ב-`index.html`. ה-API נמצא ברשימת public-apis תחת Calendar, בשם Hebrew Calendar.
